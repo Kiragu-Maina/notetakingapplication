@@ -1,7 +1,7 @@
 'use client'
 import * as React from "react"
 import { FormEvent, useEffect, useState } from "react"
-import { useRouter } from "next/navigation"
+import { useParams, useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -10,7 +10,8 @@ import { Textarea } from "@/components/ui/textarea"
 
 export default function EditNotePage() {
   const router = useRouter()
-  const { id } = router.query  // Getting the ID from the URL
+  const params = useParams();
+  const id= params.id  // Getting the ID from the URL
   const [note, setNote] = useState<{ title: string, content: string }>({
     title: "",
     content: ""
