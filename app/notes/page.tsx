@@ -17,7 +17,7 @@ export default function NotesPage() {
 
   // Redirect to the edit page
   const handleEdit = (noteId: number) => {
-    router.push(`/notes/edit/${noteId}`)
+    router.push(`/notes/${noteId}/edit`)
   }
 
   // Handle deleting a note
