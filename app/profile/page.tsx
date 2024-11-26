@@ -5,8 +5,14 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { useRouter } from "next/navigation"
 
+// Define a type for the profile data
+interface Profile {
+  name: string
+  email: string
+}
+
 export default function ProfilePage() {
-  const [profile, setProfile] = useState<any>(null)
+  const [profile, setProfile] = useState<Profile | null>(null) // Use the Profile type here
   const [loading, setLoading] = useState(true)
   const router = useRouter()
 
@@ -28,6 +34,8 @@ export default function ProfilePage() {
   }, [])
 
   if (loading) return <p>Loading...</p>
+
+  if (!profile) return <p>No profile data available.</p>
 
   return (
     <div className="max-w-3xl mx-auto my-8">
