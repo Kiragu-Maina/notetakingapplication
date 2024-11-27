@@ -1,32 +1,94 @@
-// page.tsx
-'use client'
-import React from "react"
-import { useRouter } from 'next/navigation'
-import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
+'use client';
 
+import React, { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+
+interface Note {
+  id: string;
+  title: string;
+  content: string;
+}
 export default function NotesPage() {
-  const router = useRouter()
+  const router = useRouter();
+  const [notes, setNotes] = useState<Note[]>([]);
 
-  // Example notes data (this can be fetched dynamically)
-  const notes = [
-    { id: 1, title: "Note 1", content: "This is the first note." },
-    { id: 2, title: "Note 2", content: "This is the second note." },
- 
-  ]
+  const [error, setError] = useState<string | null>(null);
 
-  // Redirect to the edit page
-  const handleEdit = (noteId: number) => {
-    router.push(`/notes/${noteId}/edit`)
-  }
+  useEffect(() => {
+    const fetchNotes = async () => {
+      const token = localStorage.getItem('token'); // Get the token from local storage
+      if (!token) {
+        router.push('/login'); // Redirect to login if not authenticated
+        return;
+      }
 
-  // Handle deleting a note
-  const handleDelete = (noteId: number) => {
-    alert(`Deleting note with ID: ${noteId}`)
+      try {
+        const response = await fetch('https://notesbackend-thealkennist5301-rtts62wp.leapcell.dev/api/notes', {
+          headers: {
+            Authorization: `Bearer ${token}`, // Send token in Authorization header
+          },
+        });
+
+        if (!response.ok) {
+          throw new Error('Failed to fetch notes');
+        }
+
+        const data = await response.json();
+        setNotes(data.notes);
+      } catch (error) {
+        console.error('Error fetching notes:', error);
+        setError('Failed to load notes. Please try again later.');
+      }
+    };
+
+    fetchNotes();
+  }, [router]);
+
+  const handleEdit = (noteId: string) => {
+    router.push(`/notes/${noteId}/edit`);
+  };
+
+  const handleDelete = async (noteId: string) => {
+    const token = localStorage.getItem('token');
+    if (!token) {
+      alert('You must be logged in to delete a note.');
+      return;
+    }
+
+    try {
+      const response = await fetch(`https://notesbackend-thealkennist5301-rtts62wp.leapcell.dev/api/notes/${noteId}`, {
+        method: 'DELETE',
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to delete note');
+      }
+
+      // Update the UI by removing the deleted note
+      setNotes((prevNotes) => prevNotes.filter((note) => note.id !== noteId));
+      alert('Note deleted successfully!');
+    } catch (error) {
+      console.error('Error deleting note:', error);
+      alert('Failed to delete the note.');
+    }
+  };
+
+  if (error) {
+    return <p className="text-red-500">{error}</p>;
   }
 
   return (
     <div className="space-y-6 max-w-3xl mx-auto my-8">
+
+      {/* Button to create a new note */}
+      <Button onClick={() => router.push('/notes/create')} className="w-full">
+        Create New Note
+      </Button>
       {notes.map((note) => (
         <Card key={note.id} className="w-full">
           <CardHeader>
@@ -36,16 +98,16 @@ export default function NotesPage() {
             <p>{note.content}</p>
           </CardContent>
           <CardFooter className="flex justify-between">
-            <Button variant="outline" onClick={() => handleEdit(note.id)}>Edit</Button>
-            <Button variant="destructive" onClick={() => handleDelete(note.id)}>Delete</Button>
+            <Button variant="outline" onClick={() => handleEdit(note.id)}>
+              Edit
+            </Button>
+            <Button variant="destructive" onClick={() => handleDelete(note.id)}>
+              Delete
+            </Button>
           </CardFooter>
         </Card>
       ))}
-      
-      {/* Button to create a new note */}
-      <Button onClick={() => router.push('/notes/create')} className="w-full">
-        Create New Note
-      </Button>
+
     </div>
-  )
+  );
 }

@@ -24,9 +24,19 @@ export default function CreateNotePage() {
 
     setLoading(true)
 
-    const response = await fetch("/api/notes/create", {
+    const token = localStorage.getItem("token");  // Retrieve the token from localStorage
+    if (!token) {
+      alert("You must be logged in to create a note.");
+      setLoading(false);
+      return;
+    }
+
+    const response = await fetch("https://notesbackend-thealkennist5301-rtts62wp.leapcell.dev/api/notes/", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: { 
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${token}`, // Send token in Authorization header
+      },
       body: JSON.stringify({ title, content }),
     })
 

@@ -1,33 +1,69 @@
-'use client'
-import * as React from "react"
-import { FormEvent } from 'react'
-import { useRouter } from 'next/navigation'
-import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Button } from "@/components/ui/button"
+'use client';
+
+import * as React from 'react';
+import { useState, useEffect, FormEvent } from 'react';
+import { useRouter } from 'next/navigation';
+import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Button } from '@/components/ui/button';
+
+import { auth } from '@/firebase'; // Ensure this points to your Firebase initialization file
+import { onAuthStateChanged } from 'firebase/auth';
 
 export default function LoginPage() {
-  const router = useRouter()
+  const router = useRouter();
+  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, async (user) => {
+      if (user) {
+        try {
+          const idToken = await user.getIdToken(); // Safely use user only if it's not null
+          localStorage.setItem('token', idToken); // Save token for persistence
+          router.push('/notes'); // Redirect if logged in
+        } catch (err) {
+          console.error('Failed to get ID token:', err);
+        }
+      } else {
+        localStorage.removeItem('token'); // Clear token if logged out
+        setLoading(false); // Allow the login form to render
+      }
+    });
+
+    return () => unsubscribe();
+  }, [router]);
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault()
+    event.preventDefault();
 
-    const formData = new FormData(event.currentTarget)
-    const email = formData.get('email') as string
-    const password = formData.get('password') as string
+    const formData = new FormData(event.currentTarget);
+    const email = formData.get('email') as string;
+    const password = formData.get('password') as string;
 
-    const response = await fetch('/api/auth/login', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, password }),
-    })
+    try {
+      const userCredential = await auth.signInWithEmailAndPassword(email, password);
+      const user = userCredential.user;
 
-    if (response.ok) {
-      router.push('/profile')
-    } else {
-      // Handle errors
+      if (user) { // Ensure user is not null
+        const idToken = await user.getIdToken();
+        localStorage.setItem('token', idToken); // Save token for persistence
+        router.push('/notes'); // Redirect to notes page upon successful login
+      } else {
+        throw new Error('User is null after login.'); // Additional safeguard
+      }
+    } catch (error: unknown) {
+      if (error instanceof Error) {
+        setError(error.message); // Display the error message
+      } else {
+        setError('An unknown error occurred.');
+      }
     }
+  }
+
+  if (loading) {
+    return <p>Loading...</p>; // Prevent flickering during auth state check
   }
 
   return (
@@ -36,7 +72,7 @@ export default function LoginPage() {
         <CardTitle>Login</CardTitle>
       </CardHeader>
       <CardContent>
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form id="loginForm" onSubmit={handleSubmit} className="space-y-4">
           <div className="flex flex-col">
             <Label htmlFor="email">Email</Label>
             <Input
@@ -57,12 +93,17 @@ export default function LoginPage() {
               required
             />
           </div>
+          {error && <p className="text-red-500">{error}</p>}
         </form>
       </CardContent>
       <CardFooter className="flex justify-between">
-        <Button variant="outline">Cancel</Button>
-        <Button onClick={() => router.push('/profile')}>Login</Button>
+        <Button variant="outline" onClick={() => router.push('/')}>
+          Cancel
+        </Button>
+        <Button type="submit" form="loginForm">
+          Login
+        </Button>
       </CardFooter>
     </Card>
-  )
+  );
 }

@@ -1,40 +1,81 @@
-'use client'
-import * as React from "react"
-import { FormEvent } from 'react'
-import { useRouter } from 'next/navigation'
-import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Button } from "@/components/ui/button"
+'use client';
+
+import * as React from 'react';
+import { useState, FormEvent, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Button } from '@/components/ui/button';
+
+import { auth } from '@/firebase'; // Ensure this points to your Firebase initialization file
+import { onAuthStateChanged } from 'firebase/auth';
 
 export default function RegisterPage() {
-  const router = useRouter()
+  const router = useRouter();
+  const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, async (user) => {
+      if (user) {
+        const idToken = await user.getIdToken();
+        localStorage.setItem('token', idToken); // Save token for persistence
+        router.push('/notes'); // Redirect if logged in
+      } else {
+        localStorage.removeItem('token'); // Clear token if logged out
+        setLoading(false); // Allow the registration form to render
+      }
+    });
+
+    return () => unsubscribe(); // Cleanup the observer on component unmount
+  }, [router]);
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault()
+    event.preventDefault();
 
-    const formData = new FormData(event.currentTarget)
-    const email = formData.get('email') as string
-    const password = formData.get('password') as string
-    const confirmPassword = formData.get('confirmPassword') as string
+    const formData = new FormData(event.currentTarget);
+    const email = formData.get('email') as string;
+    const password = formData.get('password') as string;
+    const confirmPassword = formData.get('confirmPassword') as string;
 
     // Check if passwords match
     if (password !== confirmPassword) {
-      alert('Passwords do not match!')
-      return
+      setError('Passwords do not match!');
+      setSuccess(null);
+      return;
     }
 
-    const response = await fetch('/api/auth/register', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, password }),
-    })
+    try {
+      // Register the user with Firebase Authentication
+      const userCredential = await auth.createUserWithEmailAndPassword(email, password);
+      const user = userCredential?.user;
 
-    if (response.ok) {
-      router.push('/login')  // Redirect to login after successful registration
-    } else {
-      // Handle errors
+      if (user) {
+        const idToken = await user.getIdToken();
+
+        localStorage.setItem('token', idToken); // Save token for persistence
+        setSuccess(`User registered successfully! Welcome, ${user.email}`);
+        setError(null);
+
+        router.push('/notes'); // Redirect to notes or dashboard
+      } else {
+        setError('Registration failed. Please try again.');
+        setSuccess(null);
+      }
+    } catch (error: unknown) {
+      if (error instanceof Error) {
+        setError(error.message); // Safely access the error message
+      } else {
+        setError('An unknown error occurred.');
+      }
+      setSuccess(null);
     }
+  }
+
+  if (loading) {
+    return <p>Loading...</p>; // Prevent flickering during auth state check
   }
 
   return (
@@ -43,7 +84,7 @@ export default function RegisterPage() {
         <CardTitle>Register</CardTitle>
       </CardHeader>
       <CardContent>
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form id="registerForm" onSubmit={handleSubmit} className="space-y-4">
           <div className="flex flex-col">
             <Label htmlFor="email">Email</Label>
             <Input
@@ -74,12 +115,18 @@ export default function RegisterPage() {
               required
             />
           </div>
+          {error && <p className="text-red-500">{error}</p>}
+          {success && <p className="text-green-500">{success}</p>}
         </form>
       </CardContent>
       <CardFooter className="flex justify-between">
-        <Button variant="outline" onClick={() => router.push('/login')}>Cancel</Button>
-        <Button type="submit" form="registerForm">Register</Button>
+        <Button variant="outline" onClick={() => router.push('/login')}>
+          Cancel
+        </Button>
+        <Button type="submit" form="registerForm">
+          Register
+        </Button>
       </CardFooter>
     </Card>
-  )
+  );
 }
