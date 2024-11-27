@@ -104,7 +104,8 @@ export default function LoginPage() {
           Login
         </Button>
         <div className="flex items-center gap-2">
-          <span className="text-sm">Have an account?</span>
+        <span className="text-sm">Don&apos;t have an account?</span>
+          
           <Button variant="link" onClick={() => router.push('/auth/register')}>
             Register
           </Button>
