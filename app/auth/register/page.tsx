@@ -126,6 +126,12 @@ export default function RegisterPage() {
         <Button type="submit" form="registerForm">
           Register
         </Button>
+        <div className="flex items-center gap-2">
+          <span className="text-sm">Have an account?</span>
+          <Button variant="link" onClick={() => router.push('/auth/login')}>
+            Login
+          </Button>
+        </div>
       </CardFooter>
     </Card>
   );
