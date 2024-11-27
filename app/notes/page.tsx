@@ -20,7 +20,7 @@ export default function NotesPage() {
     const fetchNotes = async () => {
       const token = localStorage.getItem('token'); // Get the token from local storage
       if (!token) {
-        router.push('/login'); // Redirect to login if not authenticated
+        router.push('/auth/login'); // Redirect to login if not authenticated
         return;
       }
 
