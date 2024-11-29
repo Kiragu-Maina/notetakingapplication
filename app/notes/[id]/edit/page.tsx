@@ -7,7 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
-
+import config from '@/apiconfig';
 export default function EditNotePage() {
   const router = useRouter()
   const { id } = useParams(); // Getting the ID from the URL
@@ -17,7 +17,7 @@ export default function EditNotePage() {
   })
   const [loading, setLoading] = useState<boolean>(false)
   const [error, setError] = useState<string | null>(null)
-
+  const backendUrl = config.backendUrl
   // Helper function to get token from localStorage
   const getToken = (): string | null => localStorage.getItem("token");
 
@@ -35,7 +35,7 @@ export default function EditNotePage() {
       setLoading(true)
       setError(null); // Clear previous errors
       try {
-        const response = await fetch(`https://notesbackend-thealkennist5301-rtts62wp.leapcell.dev/api/notes/${id}`, {
+        const response = await fetch(`${backendUrl}/api/notes/${id}`, {
           headers: { Authorization: `Bearer ${token}` }
         });
 
@@ -43,6 +43,13 @@ export default function EditNotePage() {
         if (response.ok) {
           setNote({ title: data.title, content: data.content });
         } else {
+          const errorData = await response.json(); // Parse the error response
+          if (errorData.error === 'Invalid token') {
+          
+            router.push('auth/login'); // Redirect to the login page
+            return; // Stop further execution
+          }
+        
           setError("Error fetching note data");
         }
       } catch (error) {
@@ -53,7 +60,7 @@ export default function EditNotePage() {
     };
 
     fetchNote();
-  }, [id]);
+  }, [id, backendUrl]);
 
   // Handle form submission to update the note
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
@@ -73,7 +80,7 @@ export default function EditNotePage() {
     setLoading(true);
 
     try {
-      const response = await fetch(`https://notesbackend-thealkennist5301-rtts62wp.leapcell.dev/api/notes/${id}`, {
+      const response = await fetch(`http://127.0.0.1:3002/api/notes/${id}`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",

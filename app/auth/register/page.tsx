@@ -56,6 +56,7 @@ export default function RegisterPage() {
         const idToken = await user.getIdToken();
 
         localStorage.setItem('token', idToken); // Save token for persistence
+        localStorage.setItem('email', email);
         setSuccess(`User registered successfully! Welcome, ${user.email}`);
         setError(null);
 

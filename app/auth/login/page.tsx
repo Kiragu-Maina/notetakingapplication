@@ -20,18 +20,22 @@ export default function LoginPage() {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
       if (user) {
         try {
-          const idToken = await user.getIdToken(); // Safely use user only if it's not null
-          localStorage.setItem('token', idToken); // Save token for persistence
-          router.push('/notes'); // Redirect if logged in
-        } catch (err) {
-          console.error('Failed to get ID token:', err);
+          const idToken = await user.getIdToken();
+          localStorage.setItem("token", idToken);
+          localStorage.setItem("email", user.email || ""); // Save email for persistence
+          router.push("/notes"); // Redirect only if user is logged in
+        } catch (error) {
+          console.error("Failed to get ID token:", error);
+          setError("Failed to authenticate. Please try again.");
         }
       } else {
-        localStorage.removeItem('token'); // Clear token if logged out
+        // Clear token and email if user logs out
+        localStorage.removeItem("token");
+        localStorage.removeItem("email");
         setLoading(false); // Allow the login form to render
       }
     });
-
+  
     return () => unsubscribe();
   }, [router]);
 
@@ -49,6 +53,7 @@ export default function LoginPage() {
       if (user) { // Ensure user is not null
         const idToken = await user.getIdToken();
         localStorage.setItem('token', idToken); // Save token for persistence
+        localStorage.setItem('email', email);
         router.push('/notes'); // Redirect to notes page upon successful login
       } else {
         throw new Error('User is null after login.'); // Additional safeguard

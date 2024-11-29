@@ -7,12 +7,13 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
-
+import config from '@/apiconfig';
 export default function CreateNotePage() {
   const router = useRouter()
   const [title, setTitle] = useState<string>("")
   const [content, setContent] = useState<string>("")
   const [loading, setLoading] = useState(false)
+  const backendUrl = config.backendUrl
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
@@ -31,7 +32,7 @@ export default function CreateNotePage() {
       return;
     }
 
-    const response = await fetch("https://notesbackend-thealkennist5301-rtts62wp.leapcell.dev/api/notes/", {
+    const response = await fetch(`${backendUrl}/api/notes/`, {
       method: "POST",
       headers: { 
         "Content-Type": "application/json",
@@ -43,7 +44,16 @@ export default function CreateNotePage() {
     if (response.ok) {
       router.push("/notes") // Redirect to notes list after successful creation
     } else {
-      alert("Error creating note. Please try again.")
+     
+      
+        const errorData = await response.json(); // Parse the error response
+        if (errorData.error === 'Invalid token') {
+         
+          router.push('auth/login'); // Redirect to the login page
+          return; // Stop further execution
+        }
+        alert("Error creating note. Please try again.")
+      
     }
 
     setLoading(false)
